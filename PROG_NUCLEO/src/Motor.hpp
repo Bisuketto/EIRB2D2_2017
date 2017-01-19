@@ -10,7 +10,7 @@ class Motor
 	public:
 		Motor();
 		Motor(Serial *pc_out);
-		int asserv_vitesse(float vitesse);
+		void asserv_vitesse(float vitesse);
 		void routine();
 		void calc_sens(float vd, float vg);
 		void calc_vitesse();
@@ -29,18 +29,13 @@ class Motor
 		DigitalOut *sens_mG;
 		int sensG;
 		int sensD;
-		float KG;
-		float KD;
-		int timer_us;
 		float consigne_vitesse; //In Imp.s^-1
-		float vitesse_d;
-		float vitesse_g;
+		float vitesse_d; //In Imp.s^-1
+		float vitesse_g; //In Imp.s^-1
 		int imp_d;
 		int imp_g;
 		float dist_d;
 		float dist_g;
-		float pwmd;
 		float pwmd_eff;
-		float pwmg;
 		float pwmg_eff;
 };

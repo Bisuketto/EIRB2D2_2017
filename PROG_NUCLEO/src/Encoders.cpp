@@ -1,7 +1,17 @@
 #include "Encoders.hpp"
 
-Encoders::Encoders(Serial *pcOut)
-{
+Encoders::Encoders() {
+	modeTest = false;
+	impEncD = 0;
+	impEncG = 0;
+	TIM3_EncoderInit();
+	TIM4_EncoderInit();
+	scheduler_Encoders = new Ticker;
+	scheduler_Encoders->attach(callback(this, &Encoders::routine_Encoders), PERIODE_ENCODER);//100Hz
+}
+
+Encoders::Encoders(Serial *pcOut) {
+	modeTest = true;
 	pc = pcOut;
 	impEncD = 0;
 	impEncG = 0;
@@ -30,9 +40,9 @@ void Encoders::routine_Encoders()
 }
 
 void Encoders::TIM3_EncoderInit() {
-	GPIO_InitTypeDef GPIO_InitStruct;
 	__GPIOA_CLK_ENABLE();
 	__TIM3_CLK_ENABLE();
+	GPIO_InitTypeDef GPIO_InitStruct;
 	GPIO_InitStruct.Pin = GPIO_PIN_6 | GPIO_PIN_7;
 	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
 	GPIO_InitStruct.Pull = GPIO_PULLDOWN;

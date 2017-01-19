@@ -2,7 +2,7 @@
 
 Motor::Motor() {
 	modeTest = false;
-	instEncoder = new Encoders(pc);
+	instEncoder = new Encoders;
 	routineAsserv = new Ticker;
 	motorD = new PwmOut(PIN_PWMD);
 	motorG = new PwmOut(PIN_PWMG);
@@ -34,7 +34,7 @@ Motor::Motor(Serial *pc_out) //Ajouter les pins dans les paramètres de construct
 }
 
 //Vitesse en mm/s
-int Motor::asserv_vitesse(float vitesse) {
+void Motor::asserv_vitesse(float vitesse) {
 	consigne_vitesse = (vitesse / PERIMETER) * RESOLUTION;
 	routineAsserv->attach(callback(this, &Motor::routine), PERIODE_ASSERV); //256Hz
 	calc_sens(consigne_vitesse, consigne_vitesse);
@@ -42,16 +42,15 @@ int Motor::asserv_vitesse(float vitesse) {
 		if (modeTest)
 			test_encodeurs();
 	}
-	return 0;
 }
 
 void Motor::routine()
 {
 	calc_vitesse();
-	int epsilon_d = consigne_vitesse - vitesse_d;
-	int epsilon_g = consigne_vitesse - vitesse_g;
+	float epsilon_d = consigne_vitesse - vitesse_d;
+	float epsilon_g = consigne_vitesse - vitesse_g;
 	pwmd_eff = (epsilon_d * KP) / VITESSE_MAX;
-	pwmg_eff = (epsilon_g * KP) / VITESSE_MAX; //(RAPPORT_ROUX*V_MAX*RESOLUTION)
+	pwmg_eff = (epsilon_g * KP) / VITESSE_MAX;
 
 	pwmd_eff = (pwmd_eff < 0) ? 0 : pwmd_eff;
 	pwmd_eff = (pwmd_eff > 1) ? 1 : pwmd_eff;

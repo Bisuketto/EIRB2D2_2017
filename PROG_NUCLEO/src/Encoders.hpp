@@ -7,12 +7,14 @@
 class Encoders
 {
 	public:
+		Encoders();
 		Encoders(Serial *pcOut);
 		int getImpEncD();
 		int getImpEncG();
 		void routine_Encoders();
 		~Encoders();
 	private:
+		bool modeTest;
 		Serial *pc;
 		int impEncD;
 		int impEncG;
@@ -20,4 +22,3 @@ class Encoders
 		void TIM4_EncoderInit();
 		Ticker *scheduler_Encoders;
 };
-

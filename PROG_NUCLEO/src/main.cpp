@@ -3,7 +3,6 @@
 #include "CONSTANTS.hpp"
 #include "PINOUT_NUCLEO.hpp"
 
-
 int main() {
 	Serial *pc = new Serial(USBTX, USBRX, 9600);
 	pc->printf("Attente...\n");
