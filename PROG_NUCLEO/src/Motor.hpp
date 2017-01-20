@@ -38,4 +38,8 @@ class Motor
 		float dist_g;
 		float pwmd_eff;
 		float pwmg_eff;
+		float epsilon_dant;
+		float epsilon_gant;
+		float sum_epsilon_d;
+		float sum_epsilon_g;
 };

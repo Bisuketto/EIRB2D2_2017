@@ -49,6 +49,12 @@ void Motor::routine()
 	calc_vitesse();
 	float epsilon_d = consigne_vitesse - vitesse_d;
 	float epsilon_g = consigne_vitesse - vitesse_g;
+	float delta_ed = epsilon_dant - epsilon_d;
+	float delta_eg = epsilon_gant - epsilon_g;
+	sum_epsilon_d += epsilon_d;
+	sum_epsilon_g += epsilon_g;
+	epsilon_dant = epsilon_d;
+	epsilon_gant = epsilon_g;
 	pwmd_eff = (epsilon_d * KP) / VITESSE_MAX;
 	pwmg_eff = (epsilon_g * KP) / VITESSE_MAX;
 
@@ -104,7 +110,7 @@ void Motor::test_encodeurs()
 			//pc->printf("Imp G: %d\nImp D : %d\n", instEncoder->getImpEncG(), instEncoder->getImpEncD());
 			pc->printf("e G : %f e D : %f\n", consigne_vitesse - vitesse_g, consigne_vitesse - vitesse_d);
 			//pc->printf("corr G : %f corr D : %f\n", (consigne_vitesse - vitesse_g)*KP, (consigne_vitesse - vitesse_d)*KP);
-			pc->printf("PWM G : %f PWM D : %f\n", (consigne_vitesse - vitesse_g)*KP / VITESSE_MAX, (consigne_vitesse - vitesse_d)*KP / VITESSE_MAX);
+			pc->printf("Vitesse G : %f Vitesse D : %f\n", vitesse_g * PERIMETER / RESOLUTION, vitesse_d * PERIMETER / RESOLUTION);
 			//pc->printf("Vitesse G : %f inc/s\nVitesse D : %f inc/s\n\n", vitesse_d, vitesse_g);
 			pc->printf("Inc G : %d\nInc D : %d\n\n", instEncoder->getImpEncG(), instEncoder->getImpEncD());
 			affichage_debug->reset();
