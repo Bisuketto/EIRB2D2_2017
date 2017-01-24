@@ -9,5 +9,5 @@
 #define KP 0.707107
 #define KD 0
 #define KI 0
-#define PERIODE_ASSERV (1./512) //Intervalle d'échantillonnage à 256Hz
+#define PERIODE_ASSERV (1./1024) //Intervalle d'échantillonnage à 256Hz
 #define PERIODE_PWM 25 //µs

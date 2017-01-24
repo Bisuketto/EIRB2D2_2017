@@ -40,8 +40,8 @@ class Motor
 		int imp_g; //Left Encoder Impulsions Count
 		float pwmd; //Right Motor PWM
 		float pwmg; //Left Motor PWM
-		float vs_d[8];
-		float vs_g[8];
+		float pwms_d[8];
+		float pwms_g[8];
 		float errors_d[8];
 		float errors_g[8];
 };

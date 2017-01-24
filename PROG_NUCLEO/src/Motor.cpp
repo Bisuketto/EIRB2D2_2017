@@ -13,8 +13,8 @@ Motor::Motor() {
 	sens_mD = new DigitalOut(PIN_SENSMD);
 	sens_mG = new DigitalOut(PIN_SENSMG);
 	for (int i = 0; i < 9; i++) {
-		vs_d[i] = 0;
-		vs_g[i] = 0;
+		pwms_d[i] = 0;
+		pwms_g[i] = 0;
 		errors_d[i] = 0;
 		errors_g[i] = 0;
 	}
@@ -38,8 +38,8 @@ Motor::Motor(Serial *pc_out) //Ajouter les pins dans les paramètres de construct
 	sens_mG = new DigitalOut(PIN_SENSMG);
 	bouton = new DigitalIn(USER_BUTTON);
 	for (int i = 0; i < 9; i++) {
-		vs_d[i] = 0;
-		vs_g[i] = 0;
+		pwms_d[i] = 0;
+		pwms_g[i] = 0;
 		errors_d[i] = 0;
 		errors_g[i] = 0;
 	}
@@ -73,8 +73,8 @@ void Motor::routine()
 
 	calc_vitesse();
 
-	push_in_tab(vitesse_d, vs_d);
-	push_in_tab(vitesse_g, vs_g);
+	push_in_tab(pwmd, pwms_d);
+	push_in_tab(pwmg, pwms_g);
 
 	float epsilon_d = consigne_vitesse - vitesse_d;
 	float epsilon_g = consigne_vitesse - vitesse_g;
@@ -82,8 +82,8 @@ void Motor::routine()
 	for (int i = 0; i < 8; i++) {
 		pwmd += errors_d[i] * coeffX[i] / VITESSE_MAX;
 		pwmg += errors_g[i] * coeffX[i] / VITESSE_MAX;
-		pwmd -= vs_d[i] * coeffY[i] / VITESSE_MAX;
-		pwmg -= vs_g[i] * coeffY[i] / VITESSE_MAX;
+		pwmd -= pwms_d[i] * coeffY[i];
+		pwmg -= pwms_g[i] * coeffY[i];
 	}
 
 	pwmd = (pwmd < 0) ? 0 : pwmd;
