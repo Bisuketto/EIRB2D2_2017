@@ -12,6 +12,12 @@ Motor::Motor() {
 	motorG->write(0);
 	sens_mD = new DigitalOut(PIN_SENSMD);
 	sens_mG = new DigitalOut(PIN_SENSMG);
+	for (int i = 0; i < 9; i++) {
+		vs_d[i] = 0;
+		vs_g[i] = 0;
+		errors_d[i] = 0;
+		errors_g[i] = 0;
+	}
 }
 
 Motor::Motor(Serial *pc_out) //Ajouter les pins dans les paramètres de constructeur
@@ -31,6 +37,12 @@ Motor::Motor(Serial *pc_out) //Ajouter les pins dans les paramètres de construct
 	sens_mD = new DigitalOut(PIN_SENSMD);
 	sens_mG = new DigitalOut(PIN_SENSMG);
 	bouton = new DigitalIn(USER_BUTTON);
+	for (int i = 0; i < 9; i++) {
+		vs_d[i] = 0;
+		vs_g[i] = 0;
+		errors_d[i] = 0;
+		errors_g[i] = 0;
+	}
 }
 
 void Motor::asserv_vitesse(float vitesse) {
@@ -56,22 +68,31 @@ void Motor::asserv_angle(float angle){
 
 void Motor::routine()
 {
+	float coeffX[8] = { 0.3143, 1.813, 4.352, 5.57, 4.014, 1.55, 0.2561, 0.002982 };
+	float coeffY[8] = { 0.3036, 1.906, 4.982, 6.953, 5.475, 2.322, 0.4277, 0.007978 };
+
 	calc_vitesse();
+
+	push_in_tab(vitesse_d, vs_d);
+	push_in_tab(vitesse_g, vs_g);
+
 	float epsilon_d = consigne_vitesse - vitesse_d;
 	float epsilon_g = consigne_vitesse - vitesse_g;
-	float delta_ed = epsilon_v_dant - epsilon_d;
-	float delta_eg = epsilon_v_gant - epsilon_g;
-	sum_epsilon_v_d += epsilon_d;
-	sum_epsilon_v_g += epsilon_g;
-	epsilon_v_dant = epsilon_d;
-	epsilon_v_gant = epsilon_g;
-	pwmd = (epsilon_d * KP + delta_ed * KD + sum_epsilon_v_d * KI) / VITESSE_MAX;
-	pwmg = (epsilon_g * KP + delta_eg * KD + sum_epsilon_v_g * KI) / VITESSE_MAX;
+
+	for (int i = 0; i < 8; i++) {
+		pwmd += errors_d[i] * coeffX[i] / VITESSE_MAX;
+		pwmg += errors_g[i] * coeffX[i] / VITESSE_MAX;
+		pwmd -= vs_d[i] * coeffY[i] / VITESSE_MAX;
+		pwmg -= vs_g[i] * coeffY[i] / VITESSE_MAX;
+	}
 
 	pwmd = (pwmd < 0) ? 0 : pwmd;
 	pwmd = (pwmd > 1) ? 1 : pwmd;
 	pwmg = (pwmg < 0) ? 0 : pwmg;
 	pwmg = (pwmg > 1) ? 1 : pwmg;
+
+	push_in_tab(epsilon_d, errors_d);
+	push_in_tab(epsilon_g, errors_g);
 
 	motorD->write(pwmd);
 	motorG->write(pwmg);
@@ -127,6 +148,13 @@ void Motor::test_encodeurs()
 			affichage_debug->reset();
 		}
 	}
+}
+
+void Motor::push_in_tab(float x, float tableau[]){
+	for (int i = 0; i < 8-1; i++) {
+		tableau[8 - i - 1] = tableau[8 - i - 2];
+	}
+	tableau[0] = x;
 }
 
 Motor::~Motor()

@@ -19,6 +19,7 @@ class Motor
 		void test_encodeurs();
 		~Motor();
 	private:
+		void push_in_tab(float x, float tableau[]);
 		Encoders *instEncoder;
 		Ticker *routineAsserv;
 		Timer *affichage_debug;
@@ -39,8 +40,8 @@ class Motor
 		int imp_g; //Left Encoder Impulsions Count
 		float pwmd; //Right Motor PWM
 		float pwmg; //Left Motor PWM
-		float epsilon_v_dant; //Right Speed Error n-1
-		float epsilon_v_gant; //Left Speed Error n-1
-		float sum_epsilon_v_d; //Right Speed Error Sum
-		float sum_epsilon_v_g; //Left Speed Error Sum
+		float vs_d[8];
+		float vs_g[8];
+		float errors_d[8];
+		float errors_g[8];
 };
