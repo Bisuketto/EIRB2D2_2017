@@ -70,4 +70,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Motor.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="MAXON CARAC.txt" />
+  </ItemGroup>
 </Project>
