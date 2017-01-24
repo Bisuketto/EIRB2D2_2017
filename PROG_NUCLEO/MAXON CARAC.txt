@@ -1,0 +1,36 @@
+EC-max 30 Ø30 mm, brushless, 60 Watt, with Hall sensors  #C PA LE BON
+Part number 272763
+
+Characteristics
+Terminal resistance	1.27 ?
+Terminal inductance	0.143 mH
+Torque constant	24.3 mNm/A
+Speed constant	393 rpm/V
+Speed / torque gradient	20.6 rpm/mNm
+Mechanical time constant	4.73 ms
+Rotor inertia	21.9 gcm²
+
+-------------------------------------------------
+
+RE 30 Ø30 mm, Graphite Brushes, 60 Watt
+Part number 268213
+
+Values at nominal voltage
+Nominal voltage	18 V
+No load speed	8590 rpm
+No load current	213 mA
+Nominal speed	7910 rpm
+Nominal torque (max. continuous torque)	75.5 mNm
+Nominal current (max. continuous current)	4 A
+Stall torque	1000 mNm
+Stall current	50.3 A
+Max. efficiency	87 %
+Characteristics
+Terminal resistance	0.358 Ohm
+Terminal inductance	0.07 mH
+Torque constant	19.9 mNm/A
+Speed constant	479 rpm/V
+Speed / torque gradient	8.61 rpm/mNm
+ + Electrical time constant 0.195ms
+Mechanical time constant	3.24 ms
+Rotor inertia	35.9 gcm²
