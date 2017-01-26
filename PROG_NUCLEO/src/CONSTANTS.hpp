@@ -9,3 +9,7 @@
 #define TAILLE_TABLEAUX 4
 #define PERIODE_ASSERV (1./1024) //Intervalle d'échantillonnage à 256Hz
 #define PERIODE_PWM 25 //µs
+#define UI_SERIAL_TX USBTX
+#define UI_SERIAL_RX USBRX
+#define UI_SERIAL_BAUDRATE 9600
+#define PERIODE_UI 1
