@@ -40,8 +40,8 @@ class Motor
 		int imp_g; //Left Encoder Impulsions Count
 		float pwmd; //Right Motor PWM
 		float pwmg; //Left Motor PWM
-		float pwms_d[8];
-		float pwms_g[8];
-		float errors_d[8];
-		float errors_g[8];
+		float pwms_d[TAILLE_TABLEAUX];
+		float pwms_g[TAILLE_TABLEAUX];
+		float errors_d[TAILLE_TABLEAUX];
+		float errors_g[TAILLE_TABLEAUX];
 };

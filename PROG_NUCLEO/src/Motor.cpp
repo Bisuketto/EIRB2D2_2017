@@ -12,7 +12,7 @@ Motor::Motor() {
 	motorG->write(0);
 	sens_mD = new DigitalOut(PIN_SENSMD);
 	sens_mG = new DigitalOut(PIN_SENSMG);
-	for (int i = 0; i < 9; i++) {
+	for (int i = 0; i < TAILLE_TABLEAUX; i++) {
 		pwms_d[i] = 0;
 		pwms_g[i] = 0;
 		errors_d[i] = 0;
@@ -37,7 +37,7 @@ Motor::Motor(Serial *pc_out) //Ajouter les pins dans les paramètres de construct
 	sens_mD = new DigitalOut(PIN_SENSMD);
 	sens_mG = new DigitalOut(PIN_SENSMG);
 	bouton = new DigitalIn(USER_BUTTON);
-	for (int i = 0; i < 9; i++) {
+	for (int i = 0; i < TAILLE_TABLEAUX; i++) {
 		pwms_d[i] = 0;
 		pwms_g[i] = 0;
 		errors_d[i] = 0;
@@ -66,33 +66,31 @@ void Motor::asserv_angle(float angle){
 	calc_sens(consigne_angle, -consigne_angle); //Angle > 0 Rotate counterclockwise
 }
 
-void Motor::routine()
-{
-	float coeffX[8] = { 0.3143, 1.813, 4.352, 5.57, 4.014, 1.55, 0.2561, 0.002982 };
-	float coeffY[8] = { 0.3036, 1.906, 4.982, 6.953, 5.475, 2.322, 0.4277, 0.007978 };
+void Motor::routine() {
+	float coeffX[TAILLE_TABLEAUX] = { 0.02619, -0.001362, -0.02546, 0.002098 };
+	float coeffY[TAILLE_TABLEAUX] = { -1.727, 0.5217, 0.2053, 0 };
 
 	calc_vitesse();
-
-	push_in_tab(pwmd, pwms_d);
-	push_in_tab(pwmg, pwms_g);
 
 	float epsilon_d = consigne_vitesse - vitesse_d;
 	float epsilon_g = consigne_vitesse - vitesse_g;
 
-	for (int i = 0; i < 8; i++) {
-		pwmd += errors_d[i] * coeffX[i] / VITESSE_MAX;
-		pwmg += errors_g[i] * coeffX[i] / VITESSE_MAX;
-		pwmd -= pwms_d[i] * coeffY[i];
-		pwmg -= pwms_g[i] * coeffY[i];
-	}
+	push_in_tab(epsilon_d / VITESSE_MAX, errors_d);
+	push_in_tab(epsilon_g / VITESSE_MAX, errors_g);
+
+
+	pwmd = coeffX[0] * errors_d[0] + coeffX[1] * errors_d[1] + coeffX[2] * errors_d[2] + coeffX[3] * errors_d[3]
+		- (coeffY[0] * pwms_d[0] + coeffY[1] * pwms_d[1] + coeffY[2] * pwms_d[2]);
+	pwmg = coeffX[0] * errors_g[0] + coeffX[1] * errors_g[1] + coeffX[2] * errors_g[2] + coeffX[3] * errors_g[3]
+		- (coeffY[0] * pwms_g[0] + coeffY[1] * pwms_g[1] + coeffY[2] * pwms_g[2]);;
 
 	pwmd = (pwmd < 0) ? 0 : pwmd;
 	pwmd = (pwmd > 1) ? 1 : pwmd;
 	pwmg = (pwmg < 0) ? 0 : pwmg;
 	pwmg = (pwmg > 1) ? 1 : pwmg;
 
-	push_in_tab(epsilon_d, errors_d);
-	push_in_tab(epsilon_g, errors_g);
+	push_in_tab(pwmd, pwms_d);
+	push_in_tab(pwmg, pwms_g);
 
 	motorD->write(pwmd);
 	motorG->write(pwmg);
@@ -151,8 +149,8 @@ void Motor::test_encodeurs()
 }
 
 void Motor::push_in_tab(float x, float tableau[]){
-	for (int i = 0; i < 8-1; i++) {
-		tableau[8 - i - 1] = tableau[8 - i - 2];
+	for (int i = 0; i < TAILLE_TABLEAUX-1; i++) {
+		tableau[TAILLE_TABLEAUX - i - 1] = tableau[TAILLE_TABLEAUX - i - 2];
 	}
 	tableau[0] = x;
 }
