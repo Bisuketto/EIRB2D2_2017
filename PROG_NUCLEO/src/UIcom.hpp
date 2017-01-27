@@ -7,16 +7,16 @@ class UIcom
 {
 	public:
 		UIcom();
-		void set_erreur_d();
-		void set_erreur_g();
-		void set_pwmd();
-		void set_pwmg();
-		void set_dist_d();
-		void set_dist_g();
-		void set_current_d();
-		void set_current_g();
-		void set_bat9();
-		void set_bat18();
+		void set_erreur_d(float value);
+		void set_erreur_g(float value);
+		void set_pwmd(float value);
+		void set_pwmg(float value);
+		void set_dist_d(float value);
+		void set_dist_g(float value);
+		void set_current_d(float value);
+		void set_current_g(float value);
+		void set_bat9(float value);
+		void set_bat18(float value);
 		~UIcom();
 	private:
 		void send_Infos();

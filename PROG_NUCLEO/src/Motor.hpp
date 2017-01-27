@@ -4,6 +4,9 @@
 #include "CONSTANTS.hpp"
 #include "PINOUT_NUCLEO.hpp"
 #include "Encoders.hpp"
+#include "UIcom.hpp"
+#include <string>
+#include <stdlib.h>
 
 class Motor
 {
@@ -16,14 +19,18 @@ class Motor
 		void routine();
 		void calc_sens(float vd, float vg);
 		void calc_vitesse();
-		void test_encodeurs();
+		void debug();
 		~Motor();
 	private:
 		void push_in_tab(float x, float tableau[]);
+		void send_to_ui();
+		UIcom *interfaceCom;
 		Encoders *instEncoder;
 		Ticker *routineAsserv;
+		Ticker *refreshUI;
 		Timer *affichage_debug;
 		Serial *pc;
+		std::string buff_in;
 		bool modeTest;
 		PwmOut *motorD;
 		PwmOut *motorG;
@@ -34,8 +41,8 @@ class Motor
 		int sensD;
 		float consigne_vitesse; //In Imp.s^-1
 		float consigne_position; //In Imp
-		float vitesse_d; //In Imp.s^-1
-		float vitesse_g; //In Imp.s^-1
+		double vitesse_d; //In Imp.s^-1
+		double vitesse_g; //In Imp.s^-1
 		int imp_d; //Right Encoder Impulsions Count
 		int imp_g; //Left Encoder Impulsions Count
 		float pwmd; //Right Motor PWM

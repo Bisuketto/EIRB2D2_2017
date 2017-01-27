@@ -23,12 +23,16 @@ Encoders::Encoders(Serial *pcOut) {
 
 int Encoders::getImpEncD()
 {
-	return impEncD;
+	int i = impEncD;
+	impEncD = 0;
+	return i;
 }
 
 int Encoders::getImpEncG()
 {
-	return impEncG;
+	int i = impEncG;
+	impEncG = 0;
+	return i;
 }
 
 void Encoders::routine_Encoders()

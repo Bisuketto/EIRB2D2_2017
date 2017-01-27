@@ -2,6 +2,8 @@
 
 Motor::Motor() {
 	modeTest = false;
+	interfaceCom = new UIcom;
+	refreshUI = new Ticker;
 	instEncoder = new Encoders;
 	routineAsserv = new Ticker;
 	motorD = new PwmOut(PIN_PWMD);
@@ -23,6 +25,7 @@ Motor::Motor() {
 Motor::Motor(Serial *pc_out) //Ajouter les pins dans les paramètres de constructeur
 {
 	pc = pc_out;
+	buff_in = "";
 	modeTest = true;
 	instEncoder = new Encoders(pc);
 	routineAsserv = new Ticker;
@@ -46,11 +49,13 @@ Motor::Motor(Serial *pc_out) //Ajouter les pins dans les paramètres de construct
 }
 
 void Motor::asserv_vitesse(float vitesse) {
-	consigne_vitesse = (vitesse / PERIMETER) * RESOLUTION;
-	routineAsserv->attach(callback(this, &Motor::routine), PERIODE_ASSERV); //256Hz
+	consigne_vitesse = 0.05; //((vitesse / PERIMETER) * RESOLUTION)/INC_MAX;
+	routineAsserv->attach(callback(this, &Motor::routine), PERIODE_ASSERV);
+	if(!modeTest)
+		refreshUI->attach(callback(this, &Motor::send_to_ui), PERIODE_SEND_UI);
 	while (1) {
 		if (modeTest)
-			test_encodeurs();
+			debug();
 	}
 }
 
@@ -67,22 +72,23 @@ void Motor::asserv_angle(float angle){
 }
 
 void Motor::routine() {
-	float coeffX[TAILLE_TABLEAUX] = { 0.02619, -0.001362, -0.02546, 0.002098 };
-	float coeffY[TAILLE_TABLEAUX] = { -1.727, 0.5217, 0.2053, 0 };
+	static float coeffX[TAILLE_TABLEAUX] = { 0.002996, 0.005659, 0.003105, 0.0004418 };
+	static float coeffY[TAILLE_TABLEAUX] = { 0.9471, -0.9995, -0.9477, 0 };
 
-	calc_vitesse();
+	calc_vitesse(); //Calcul de vitesse_d et vitesse_g
 
 	float epsilon_d = consigne_vitesse - vitesse_d;
 	float epsilon_g = consigne_vitesse - vitesse_g;
 
-	push_in_tab(epsilon_d / VITESSE_MAX, errors_d);
-	push_in_tab(epsilon_g / VITESSE_MAX, errors_g);
+	push_in_tab(epsilon_d, errors_d);
+	push_in_tab(epsilon_g, errors_g);
 
 
 	pwmd = coeffX[0] * errors_d[0] + coeffX[1] * errors_d[1] + coeffX[2] * errors_d[2] + coeffX[3] * errors_d[3]
 		- (coeffY[0] * pwms_d[0] + coeffY[1] * pwms_d[1] + coeffY[2] * pwms_d[2]);
+	//pc->printf("%f\n", pwmd);
 	pwmg = coeffX[0] * errors_g[0] + coeffX[1] * errors_g[1] + coeffX[2] * errors_g[2] + coeffX[3] * errors_g[3]
-		- (coeffY[0] * pwms_g[0] + coeffY[1] * pwms_g[1] + coeffY[2] * pwms_g[2]);;
+		- (coeffY[0] * pwms_g[0] + coeffY[1] * pwms_g[1] + coeffY[2] * pwms_g[2]);
 
 	pwmd = (pwmd < 0) ? 0 : pwmd;
 	pwmd = (pwmd > 1) ? 1 : pwmd;
@@ -123,28 +129,31 @@ void Motor::calc_vitesse() {
 	int imp_d_act = instEncoder->getImpEncD();
 	int imp_g_act = instEncoder->getImpEncG();
 
-	vitesse_d = (sens_mD->read() * 2 - 1)*((imp_d_act - imp_d) / PERIODE_ASSERV);
-	vitesse_g = (sens_mG->read() * 2 - 1)*((imp_g_act - imp_g) / PERIODE_ASSERV);
-
-	imp_d = imp_d_act;
-	imp_g = imp_g_act;
+	vitesse_d = (sens_mD->read() * 2 - 1)*((imp_d_act) / PERIODE_ASSERV)/(INC_MAX);
+	vitesse_g = (sens_mG->read() * 2 - 1)*((imp_g_act) / PERIODE_ASSERV)/(INC_MAX);
 }
 
-void Motor::test_encodeurs()
+void Motor::debug()
 {
-	pc->printf("Test des encodeurs.\n");
-	while (bouton->read() == 1);
-	while (bouton->read() == 0) {
-		if (affichage_debug->read_ms() >= 1000) {
-			pc->printf("PWMD : %f PWMG : %f\n", pwmd, pwmg);
-			//pc->printf("Imp G: %d\nImp D : %d\n", instEncoder->getImpEncG(), instEncoder->getImpEncD());
-			pc->printf("e G : %f e D : %f\n", consigne_vitesse - vitesse_g, consigne_vitesse - vitesse_d);
-			//pc->printf("corr G : %f corr D : %f\n", (consigne_vitesse - vitesse_g)*KP, (consigne_vitesse - vitesse_d)*KP);
-			pc->printf("Vitesse G : %f Vitesse D : %f\n", vitesse_g * PERIMETER / RESOLUTION, vitesse_d * PERIMETER / RESOLUTION);
-			//pc->printf("Vitesse G : %f inc/s\nVitesse D : %f inc/s\n\n", vitesse_d, vitesse_g);
-			//pc->printf("Inc G : %d\nInc D : %d\n\n", instEncoder->getImpEncG(), instEncoder->getImpEncD());
-			affichage_debug->reset();
+	if (affichage_debug->read_ms() >= 1000) {
+		//pc->printf("PWMD : %f PWMG : %f\n", pwmd, pwmg);
+		//pc->printf("Imp G: %d\nImp D : %d\n", instEncoder->getImpEncG(), instEncoder->getImpEncD());
+		//pc->printf("e G : %f e D : %f\n", consigne_vitesse - vitesse_g, consigne_vitesse - vitesse_d);
+		//pc->printf("corr G : %f corr D : %f\n", (consigne_vitesse - vitesse_g)*KP, (consigne_vitesse - vitesse_d)*KP);
+		//pc->printf("Vitesse G : %f Vitesse D : %f\n", vitesse_g * PERIMETER / RESOLUTION, vitesse_d * PERIMETER / RESOLUTION);
+		//pc->printf("Vitesse G : %f inc/s\nVitesse D : %f inc/s\n\n", vitesse_d, vitesse_g);
+		//pc->printf("Inc G : %d\nInc D : %d\n\n", instEncoder->getImpEncG(), instEncoder->getImpEncD());
+		affichage_debug->reset();
+	}
+	if (pc->readable()) {
+		char c = pc->getc();
+		if (c == '\n') {
+			consigne_vitesse = stof(buff_in);
+			pc->printf("Consigne changée à : %f", consigne_vitesse);
+			buff_in.clear();
 		}
+		else
+			buff_in += c;
 	}
 }
 
@@ -153,6 +162,19 @@ void Motor::push_in_tab(float x, float tableau[]){
 		tableau[TAILLE_TABLEAUX - i - 1] = tableau[TAILLE_TABLEAUX - i - 2];
 	}
 	tableau[0] = x;
+}
+
+void Motor::send_to_ui() {
+	interfaceCom->set_bat18(0.);
+	interfaceCom->set_bat9(1.);
+	interfaceCom->set_current_d(2.);
+	interfaceCom->set_current_g(3.);
+	interfaceCom->set_dist_d(4.);
+	interfaceCom->set_dist_g(5.);
+	interfaceCom->set_erreur_d(errors_d[0]);
+	interfaceCom->set_erreur_g(errors_g[0]);
+	interfaceCom->set_pwmd(pwmd);
+	interfaceCom->set_pwmg(pwmg);
 }
 
 Motor::~Motor()

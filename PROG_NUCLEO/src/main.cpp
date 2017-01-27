@@ -9,8 +9,8 @@ int main() {
 	pc->printf("Attente...\n");
 	DigitalIn button(USER_BUTTON);
 	while (button.read() == 0);
-	Motor instMotor(pc);
+	Motor instMotor;
 	instMotor.calc_sens(1, 1);
-	instMotor.asserv_vitesse(50);
+	instMotor.asserv_vitesse(100);
 	return 0;
 }
