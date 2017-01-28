@@ -8,8 +8,8 @@ int main() {
 	Serial *pc = new Serial(USBTX, USBRX, 9600);
 	pc->printf("Attente...\n");
 	DigitalIn button(USER_BUTTON);
-	while (button.read() == 0);
-	Motor instMotor;
+	while (button.read() == 0 && !pc->readable());
+	Motor instMotor(pc);
 	instMotor.calc_sens(1, 1);
 	instMotor.asserv_vitesse(100);
 	return 0;

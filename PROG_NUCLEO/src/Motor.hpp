@@ -19,7 +19,8 @@ class Motor
 		void routine();
 		void calc_sens(float vd, float vg);
 		void calc_vitesse();
-		void debug();
+		void debug(int* reading);
+		void consigne_change(float consigne);
 		~Motor();
 	private:
 		void push_in_tab(float x, float tableau[]);
@@ -51,4 +52,6 @@ class Motor
 		float pwms_g[TAILLE_TABLEAUX];
 		float errors_d[TAILLE_TABLEAUX];
 		float errors_g[TAILLE_TABLEAUX];
+		int dist_d;
+		int dist_g;
 };
