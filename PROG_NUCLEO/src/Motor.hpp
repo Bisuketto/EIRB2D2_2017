@@ -13,14 +13,18 @@ class Motor
 	public:
 		Motor();
 		Motor(Serial *pc_out);
-		void asserv_vitesse(float vitesse); //Speed in mm/s
-		void asserv_position(float distance); //Distance to travel in mm
-		void asserv_angle(float angle); //Angle to rotate in degrees
-		void routine();
+		void vitesse(float vitesse); //Speed in mm/s
+		void trajectoire(float vitesse);
+		void position(float distance, float vitesse); //Distance to travel in mm
+		void angle(float angle); //Angle to rotate in degrees
+		void asserv_trajectoire();
+		void asserv_vitesse();
+		void asserv_position();
 		void calc_sens(float vd, float vg);
 		void calc_vitesse();
 		void debug(int* reading);
-		void consigne_change(float consigne);
+		void consigne_vd_change(float consigne);
+		void consigne_vg_change(float consigne);
 		~Motor();
 	private:
 		void push_in_tab(float x, float tableau[]);
@@ -40,7 +44,9 @@ class Motor
 		DigitalOut *sens_mG;
 		int sensG;
 		int sensD;
-		float consigne_vitesse; //In Imp.s^-1
+		float consigne_vitesse_d; //In Imp.s^-1
+		float consigne_vitesse_g;
+		float consigne_vitesse;
 		float consigne_position; //In Imp
 		double vitesse_d; //In Imp.s^-1
 		double vitesse_g; //In Imp.s^-1

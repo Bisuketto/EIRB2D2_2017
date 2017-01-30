@@ -11,6 +11,7 @@ int main() {
 	while (button.read() == 0 && !pc->readable());
 	Motor instMotor(pc);
 	instMotor.calc_sens(1, 1);
-	instMotor.asserv_vitesse(100);
+	//instMotor.vitesse(100);
+	instMotor.trajectoire(100);
 	return 0;
 }
