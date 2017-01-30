@@ -90,20 +90,38 @@ void Motor::trajectoire(float vitesse) {
 	}
 }
 
-void Motor::position(float distance, float vitesse) {
-	consigne_position = (distance / PERIMETER) * RESOLUTION;
-	calc_sens(consigne_position, consigne_position);
-}
-
-void Motor::angle(float angle){
-	float envergure = 300; // In mm
-	float distance_roue = (angle * 3.14 / 180)*envergure;
-	float consigne_angle = (distance_roue / PERIMETER) * RESOLUTION;
-	calc_sens(consigne_angle, -consigne_angle); //Angle > 0 Rotate counterclockwise
+void Motor::position(float distance) {
+	int reading = 0;
+	consigne_vitesse = 0;
+	consigne_vd_change(0.);
+	consigne_vg_change(0.);
+	routineAsserv->attach(callback(this, &Motor::asserv_position), PERIODE_ASSERV);
+	if (!modeTest)
+		refreshUI->attach(callback(this, &Motor::send_to_ui), PERIODE_SEND_UI);
+	else
+		pc->printf("Passage en mode test.\n");
+	while (1) {
+		if (modeTest)
+		{
+			if (pc->readable() && !reading)
+			{
+				reading = 1;
+				debug(&reading);
+			}
+		}
+	}
 }
 
 void Motor::asserv_position() {
-
+	static float K0 = 1/100000.0;
+	static float erreur_pos_d;
+	erreur_pos_d = consigne_position - dist_d;
+	static float erreur_pos_g;
+	erreur_pos_g = consigne_position - dist_g;
+	consigne_vitesse_d = erreur_pos_d*K0;
+	consigne_vitesse_g = erreur_pos_g*K0;
+	asserv_vitesse();
+	
 }
 
 void Motor::asserv_vitesse() {
@@ -111,7 +129,6 @@ void Motor::asserv_vitesse() {
 	static float coeffY[TAILLE_TABLEAUX] = { 0.9471, -0.9995, -0.9477, 0 };
 
 	calc_vitesse(); //Calcul de vitesse_d et vitesse_g
-
 	float epsilon_d = consigne_vitesse_d - vitesse_d;
 	float epsilon_g = consigne_vitesse_g - vitesse_g;
 	push_in_tab(epsilon_d, errors_d);
@@ -180,8 +197,8 @@ void Motor::calc_vitesse() {
 
 void Motor::debug(int* reading)
 {
-/*	if (affichage_debug->read_ms() >= 1000) {
-		//pc->printf("PWMD : %f PWMG : %f\n", pwmd, pwmg);
+	/*if (affichage_debug->read_ms() >= 1000) {
+		pc->printf("PWMD : %f PWMG : %f\n", pwmd, pwmg);
 		//pc->printf("Imp G: %d\nImp D : %d\n", instEncoder->getImpEncG(), instEncoder->getImpEncD());
 		//pc->printf("e G : %f e D : %f\n", consigne_vitesse - vitesse_g, consigne_vitesse - vitesse_d);
 		//pc->printf("corr G : %f corr D : %f\n", (consigne_vitesse - vitesse_g)*KP, (consigne_vitesse - vitesse_d)*KP);
@@ -191,34 +208,27 @@ void Motor::debug(int* reading)
 		affichage_debug->reset();
 	}*/
 	static char test[64] = "";
-	static char c;
 	while (pc->readable())
 	{
-		pc->gets(test, 5);
+		pc->gets(test, 6);
 	}
 	pc->printf("%s\n", test);
 	float result = atof(test);
-	dist_d = 0;
-	dist_g = 0;
-	if (result < 0) {
-		calc_sens(-1, -1);
-		consigne_vitesse = -result;
-		consigne_vd_change(-result);
-		consigne_vg_change(-result);
-	}
-	else {
-		calc_sens(1, 1);
-		consigne_vitesse = result;
-		consigne_vd_change(result);
-		consigne_vg_change(result);
-	}
+	consigne_vitesse = result;0
+
+	calc_sens(consigne_vitesse, consigne_vitesse);
+	consigne_vd_change(consigne_vitesse*(2 * sensD - 1));
+	consigne_vg_change(consigne_vitesse*(2 * sensD - 1));
+	
 	pc->printf("Consigne changée à : %f\n", consigne_vitesse);
+	pc->printf("Sens G : %d\nSens D : %d\nConsigne D : %f\nConsigne G : %f\n", sensG, sensD, consigne_vitesse_d, consigne_vitesse_g);
 	for (int j = 0; j < 64; j++)
 		test[j] = 0;
 	*reading = 0;
 }
 
 void Motor::consigne_vd_change(float consigne) {
+	
 	consigne_vitesse_d = consigne;
 	for (int i = 0; i < TAILLE_TABLEAUX; i++) {
 		push_in_tab(0., errors_d);

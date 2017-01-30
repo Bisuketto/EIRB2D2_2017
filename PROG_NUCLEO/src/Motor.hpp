@@ -15,7 +15,7 @@ class Motor
 		Motor(Serial *pc_out);
 		void vitesse(float vitesse); //Speed in mm/s
 		void trajectoire(float vitesse);
-		void position(float distance, float vitesse); //Distance to travel in mm
+		void position(float distance); //Distance to travel in mm
 		void angle(float angle); //Angle to rotate in degrees
 		void asserv_trajectoire();
 		void asserv_vitesse();

@@ -12,6 +12,6 @@ int main() {
 	Motor instMotor(pc);
 	instMotor.calc_sens(1, 1);
 	//instMotor.vitesse(100);
-	instMotor.trajectoire(100);
+	instMotor.vitesse(0);
 	return 0;
 }
