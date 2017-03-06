@@ -2,11 +2,16 @@
 
 #include "mbed.h"
 #include "CONSTANTS.hpp"
+#include "Motor.hpp"
+#include <string>
+
+class Motor;
 
 class UIcom
 {
 	public:
-		UIcom();
+		UIcom(Motor *instMotor);
+		void sendText(char *str);
 		void set_erreur_d(float value);
 		void set_erreur_g(float value);
 		void set_pwmd(float value);
@@ -17,8 +22,12 @@ class UIcom
 		void set_current_g(float value);
 		void set_bat9(float value);
 		void set_bat18(float value);
+		void set_status_motor(bool value);
 		~UIcom();
 	private:
+		bool status; //True for busy
+		bool status_motor;
+		void get_instr();
 		void send_Infos();
 		float erreur_d;
 		float erreur_g;
@@ -30,7 +39,8 @@ class UIcom
 		float current_d;
 		float bat9;
 		float bat18;
+		Motor *ptomotor;
 		Serial *serialCom;
-		Ticker *schedule;
+		Ticker *scheduleOut;
 };
 
