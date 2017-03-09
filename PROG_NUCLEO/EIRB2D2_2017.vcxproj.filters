@@ -48,4 +48,7 @@
   <ItemGroup>
     <Text Include="MAXON CARAC.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="MAXON CARAC.txt" />
+  </ItemGroup>
 </Project>

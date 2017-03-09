@@ -24,7 +24,7 @@ Motor::Motor() {
 	tc->start();
 }
 
-Motor::Motor(Serial *pc_out) //Ajouter les pins dans les paramËtres de constructeur
+Motor::Motor(Serial *pc_out) //Ajouter les pins dans les param√®tres de constructeur
 {
 	pc = pc_out;
 	buff_in = "";
@@ -380,10 +380,10 @@ void Motor::debug(int* reading)
 		consigne_vd_change(result);
 		consigne_vg_change(result);
 	}
-	pc->printf("Consigne changÈe ‡ : %f\n", consigne_vitesse);
+	pc->printf("Consigne chang√©e √† : %f\n", consigne_vitesse);
 	*/
 	consigne_position = result;
-	pc->printf("Consigne changÈe ‡ : %f\n", consigne_position);
+	pc->printf("Consigne chang√©e √† : %f\n", consigne_position);
 	for (int j = 0; j < 64; j++)
 		test[j] = 0;
 	*reading = 0;
