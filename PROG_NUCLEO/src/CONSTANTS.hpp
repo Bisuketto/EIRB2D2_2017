@@ -1,13 +1,24 @@
 #pragma once
 
-#define PERIODE_ENCODER (1./16383)
+
+#define PI 3.14159265358979224
+#define PERIODE_ENCODER 0.000061038881767686015992187023133736 //Intervalle de recupÃ©ration Ã  16383Hz
 #define RESOLUTION 4096 // Mecanical parameters
 #define PERIMETER 87.96
+#define RADIUS_ENC 0.180 //Disance Encodeur-Centre en m
 #define SPEED_CONSTANT 393 //rpm/V
 #define RAPPORT_ROUX 2.1428
-#define VITESSE_MAX 37782
-#define KP 0.707107
-#define KD 0
-#define KI 0
-#define PERIODE_ASSERV (1./512) //Intervalle d'échantillonnage à 256Hz
-#define PERIODE_PWM 25 //µs
+#define VITESSE_MAX_MOTEUR 22.73
+#define INC_MAX 199499  //37782
+#define TAILLE_TABLEAUX 4
+#define PERIODE_ASSERV 0.00020358 //~4912Hz //0.000324//0.0009765625 //Intervalle d'Ã©chantillonnage Ã  1024Hz
+#define PERIODE_PWM 25 //Âµs : 40kHz
+#define UI_SERIAL_TX USBTX
+#define UI_SERIAL_RX USBRX
+#define UI_SERIAL_BAUDRATE 115200
+#define PERIODE_UI_OUT 0.500
+#define PERIODE_UI_IN 0.100
+#define PERIODE_SEND_UI 0.500
+#define ACCELERATION 10000.
+#define VITESSEMAX 20000.
+#define TIMEOUT_ASSERVPOS 1000000
