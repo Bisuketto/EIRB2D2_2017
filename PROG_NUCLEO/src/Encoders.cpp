@@ -7,7 +7,7 @@ Encoders::Encoders() {
 	TIM3_EncoderInit();
 	TIM4_EncoderInit();
 	scheduler_Encoders = new Ticker;
-	scheduler_Encoders->attach(callback(this, &Encoders::routine_Encoders), PERIODE_ENCODER);//100Hz
+	scheduler_Encoders->attach(callback(this, &Encoders::routine_Encoders), PERIODE_ENCODER);//16383Hz
 }
 
 Encoders::Encoders(Serial *pcOut) {
@@ -37,10 +37,31 @@ int Encoders::getImpEncG()
 
 void Encoders::routine_Encoders()
 {
+	double d = TIM3->CNT - (0xFFFF / 2);
+	double g = TIM4->CNT - (0xFFFF / 2);
+	vd = d / PERIODE_ENCODER;
+	vg = g / PERIODE_ENCODER;
+	dtot_d += d;
+	dtot_g += g;
+
 	impEncG += TIM3->CNT - (0xFFFF / 2);
 	TIM3->CNT = (0xFFFF / 2);
 	impEncD += TIM4->CNT - (0xFFFF / 2);
 	TIM4->CNT = (0xFFFF / 2);
+}
+
+void Encoders::odometrie() {
+	Rlocal = RADIUS_ENC*0.001*4096*(vd + vg) / ((vd - vg)*PERIMETER);
+	v = (vd + vg) / 2;
+	distance = (dtot_d + dtot_g) / 2;
+
+	float delta_theta = distance / Rlocal;
+	float x0 = x - Rlocal*cos(theta);
+	float y0 = y - Rlocal*sin(theta);
+
+	theta = theta + delta_theta;
+	x = x0 + Rlocal*cos(theta);
+	y = y0 + Rlocal*sin(theta);
 }
 
 void Encoders::TIM3_EncoderInit() {

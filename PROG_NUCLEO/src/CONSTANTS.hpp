@@ -1,8 +1,11 @@
 #pragma once
 
+
+#define PI 3.14159265358979224
 #define PERIODE_ENCODER 0.000061038881767686015992187023133736 //Intervalle de recupération à 16383Hz
 #define RESOLUTION 4096 // Mecanical parameters
 #define PERIMETER 87.96
+#define RADIUS_ENC 0.180 //Disance Encodeur-Centre en m
 #define SPEED_CONSTANT 393 //rpm/V
 #define RAPPORT_ROUX 2.1428
 #define VITESSE_MAX_MOTEUR 22.73

@@ -133,6 +133,9 @@ void Motor::trajectoire(float vitesse) {
 
 void Motor::position(float distance, float angle) {
 	int reading = 0;
+	calc_vitesse();
+	float distance_inc = distance*RESOLUTION / PERIMETER;
+	float angle_inc = 2*angle*RADIUS_ENC*3.1415*RESOLUTION / (PERIMETER * 180);
 	consigne_a_change(angle);
 	consigne_p_change(distance);
 	tc->reset();
