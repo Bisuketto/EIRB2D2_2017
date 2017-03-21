@@ -10,3 +10,5 @@
 #define PIN_TIM3_CH2 PA_7
 #define PIN_TIM4_CH1 PD_12
 #define PIN_TIM4_CH2 PD_13
+
+#define PIN_GP2 A0

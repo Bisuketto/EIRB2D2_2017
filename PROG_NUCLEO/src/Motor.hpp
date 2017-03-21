@@ -16,6 +16,7 @@ class Motor
 		Motor();
 		Motor(Serial *pc_out);
 		void link_to_ui(UIcom *ui);
+		void link_to_enc(Encoders *enc);
 		void stop();
 		void vitesse(float vitesse); //Speed in mm/s
 		void vitesse_man(float vg, float vd);
@@ -37,7 +38,8 @@ class Motor
 	private:
 		void push_in_tab(float x, float tableau[]);
 		void send_to_ui();
-		float consigne_hyperbolique();
+		float consigne_parabolique_pos();
+		float consigne_parabolique_ang();
 		UIcom *interfaceCom;
 		Encoders *instEncoder;
 		Ticker *routineAsserv;

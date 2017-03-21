@@ -79,7 +79,7 @@ void UIcom::get_instr() {
 			if (ptomotor->get_state() == true)
 				serialCom->printf("Busy\n");
 			//while (ptomotor->get_state() == true);
-			ptomotor->position(0, consigne_ang);
+			ptomotor->position(0, consigne_ang*PI/180);
 			//while (ptomotor->get_state() == true);
 		}
 		else if (strcmp(instr, "cspd") == 0){

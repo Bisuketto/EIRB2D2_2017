@@ -8,6 +8,24 @@ Encoders::Encoders() {
 	TIM4_EncoderInit();
 	scheduler_Encoders = new Ticker;
 	scheduler_Encoders->attach(callback(this, &Encoders::routine_Encoders), PERIODE_ENCODER);//16383Hz
+	x = 0;
+	y = 0;
+	theta0 = 0;
+}
+
+Encoders::Encoders(float x0, float y0, float theta_i) {
+	modeTest = false;
+	impEncD = 0;
+	impEncG = 0;
+	TIM3_EncoderInit();
+	TIM4_EncoderInit();
+	scheduler_Encoders = new Ticker;
+	scheduler_Encoders->attach(callback(this, &Encoders::routine_Encoders), PERIODE_ENCODER);//16383Hz
+	dtot_g = 0;
+	dtot_d = 0;
+	x = x0;
+	y = y0;
+	theta0 = theta_i;
 }
 
 Encoders::Encoders(Serial *pcOut) {
@@ -19,6 +37,9 @@ Encoders::Encoders(Serial *pcOut) {
 	TIM4_EncoderInit();
 	scheduler_Encoders = new Ticker;
 	scheduler_Encoders->attach(callback(this, &Encoders::routine_Encoders), PERIODE_ENCODER);//100Hz
+	x = 0;
+	y = 0;
+	theta0 = 0;
 }
 
 int Encoders::getImpEncD()
@@ -37,31 +58,47 @@ int Encoders::getImpEncG()
 
 void Encoders::routine_Encoders()
 {
-	double d = TIM3->CNT - (0xFFFF / 2);
-	double g = TIM4->CNT - (0xFFFF / 2);
-	vd = d / PERIODE_ENCODER;
-	vg = g / PERIODE_ENCODER;
+	int g = (TIM3->CNT - (0xFFFF / 2));
+	TIM3->CNT = (0xFFFF / 2);
+	int d = (TIM4->CNT - (0xFFFF / 2));
+	TIM4->CNT = (0xFFFF / 2);
+
+	impEncG += g;
+	impEncD += d;
+
+	dld = d; // in imp.s-1
+	dlg = g;
 	dtot_d += d;
 	dtot_g += g;
-
-	impEncG += TIM3->CNT - (0xFFFF / 2);
-	TIM3->CNT = (0xFFFF / 2);
-	impEncD += TIM4->CNT - (0xFFFF / 2);
-	TIM4->CNT = (0xFFFF / 2);
+	odometrie();
 }
 
 void Encoders::odometrie() {
-	Rlocal = RADIUS_ENC*0.001*4096*(vd + vg) / ((vd - vg)*PERIMETER);
-	v = (vd + vg) / 2;
-	distance = (dtot_d + dtot_g) / 2;
+	theta = theta0 + ((dtot_d - dtot_g)*PERIMETER / RESOLUTION)/(2*RADIUS_ENC);
+	dl = ((dld + dlg)*PERIMETER / RESOLUTION) / 2;
 
-	float delta_theta = distance / Rlocal;
-	float x0 = x - Rlocal*cos(theta);
-	float y0 = y - Rlocal*sin(theta);
+	x += -dl*sin(theta);
+	y +=  dl*cos(theta);
+}
 
-	theta = theta + delta_theta;
-	x = x0 + Rlocal*cos(theta);
-	y = y0 + Rlocal*sin(theta);
+float Encoders::getX() {
+	return x;
+}
+
+float Encoders::getY() {
+	return y;
+}
+
+float Encoders::getTheta() {
+	return theta;
+}
+
+float Encoders::getDd() {
+	return dtot_d;
+}
+
+float Encoders::getDg() {
+	return dtot_g;
 }
 
 void Encoders::TIM3_EncoderInit() {

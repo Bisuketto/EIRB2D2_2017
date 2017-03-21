@@ -5,7 +5,7 @@ Motor::Motor() {
 	status = false;
 	hasToStop = false;
 	refreshUI = new Ticker;
-	instEncoder = new Encoders;
+	//instEncoder = new Encoders;
 	routineAsserv = new Ticker;
 	motorD = new PwmOut(PIN_PWMD);
 	motorG = new PwmOut(PIN_PWMG);
@@ -30,7 +30,7 @@ Motor::Motor(Serial *pc_out) //Ajouter les pins dans les paramètres de construc
 	buff_in = "";
 	modeTest = true;
 	status = false;
-	instEncoder = new Encoders(pc);
+	//instEncoder = new Encoders(pc);
 	routineAsserv = new Ticker;
 	affichage_debug = new Timer;
 	affichage_debug->start();
@@ -57,6 +57,10 @@ void Motor::link_to_ui(UIcom * ui){
 		interfaceCom = ui;
 		refreshUI->attach(callback(this, &Motor::send_to_ui), PERIODE_SEND_UI);
 	}
+}
+
+void Motor::link_to_enc(Encoders* enc) {
+	instEncoder = enc;
 }
 
 void Motor::stop(){
@@ -133,11 +137,11 @@ void Motor::trajectoire(float vitesse) {
 
 void Motor::position(float distance, float angle) {
 	int reading = 0;
-	calc_vitesse();
-	float distance_inc = distance*RESOLUTION / PERIMETER;
-	float angle_inc = 2*angle*RADIUS_ENC*3.1415*RESOLUTION / (PERIMETER * 180);
-	consigne_a_change(angle);
-	consigne_p_change(distance);
+	//calc_vitesse();
+	float distance_inc = distance*RESOLUTION / (PERIMETER);// *0.001);
+	float angle_inc = 2 * angle*RADIUS_ENC*RESOLUTION / (PERIMETER);
+	consigne_a_change(angle_inc);
+	consigne_p_change(distance_inc);
 	tc->reset();
 	routineAsserv->detach();
 	routineAsserv->attach(callback(this, &Motor::asserv_position), PERIODE_ASSERV);
@@ -165,8 +169,8 @@ void Motor::asserv_position() {
 
 	float dist_from_start = (dist_d + dist_g) / 2.;
 
-	float epsilon_angle = consigne_angle - (dist_d - dist_g);
-	float epsilon_dist = consigne_hyperbolique() - dist_from_start;
+	float epsilon_angle = consigne_parabolique_ang() - (dist_d - dist_g);
+	float epsilon_dist = consigne_parabolique_pos() - dist_from_start;
 
 	//Calcul de la pwm distance
 	push_in_tab(epsilon_dist, errors_dist);
@@ -182,8 +186,8 @@ void Motor::asserv_position() {
 	float cd = vitesse + angle;
 	float cg = vitesse - angle;
 	//Normalisation
-	cd = cd*18*2/INC_MAX+0.05;
-	cg = cg*18*2/INC_MAX+0.05;
+	cd = cd*18*2/INC_MAX+0.03;
+	cg = cg*18*2/INC_MAX+0.03;
 
 	if (cd < 0) {
 		sens_mD->write(0);
@@ -261,10 +265,10 @@ void Motor::asserv_trajectoire(){
 	asserv_vitesse();
 }
 
-float Motor::consigne_hyperbolique() {
+float Motor::consigne_parabolique_pos() {
 	float t = tc->read_us()*0.000001;
-	float acceleration = ACCELERATION;
-	float vmax = VITESSEMAX;
+	float acceleration = ACCELERATION_POS;
+	float vmax = VITESSEMAX_POS;
 	
 	if (consigne_position < 0) {
 		acceleration *= -1;
@@ -301,6 +305,51 @@ float Motor::consigne_hyperbolique() {
 		}
 		else {
 			return consigne_position;
+		}
+	}
+	return 0;
+}
+
+float Motor::consigne_parabolique_ang() {
+	float t = tc->read_us()*0.000001;
+	float acceleration = ACCELERATION_ANG;
+	float vmax = VITESSEMAX_ANG;
+
+	if (consigne_angle < 0) {
+		acceleration *= -1;
+		vmax *= -1;
+	}
+
+	float omega = consigne_angle / vmax + vmax / acceleration;
+	float alpha = vmax / acceleration;
+	float beta = omega - vmax / acceleration;
+	float gamma;
+
+	if (alpha < beta) {
+		if (t < alpha) {
+			return 0.5*acceleration*t*t;
+		}
+		else if (t < beta) {
+			return 0.5*acceleration*alpha*alpha + vmax*(t - alpha);
+		}
+		else if (t < omega) {
+			return 0.5*acceleration*alpha*alpha + vmax*(beta - alpha) + vmax*(t - beta) - 0.5*acceleration*(t - beta)*(t - beta);
+		}
+		else {
+			return consigne_angle;
+		}
+	}
+	else {
+		omega = 2 * sqrt(consigne_angle / acceleration);
+		gamma = omega / 2;
+		if (t < gamma) {
+			return 0.5*acceleration*t*t;
+		}
+		else if (t < omega) {
+			return 0.5*acceleration*gamma*gamma + (acceleration*gamma)*(t - gamma) - 0.5*acceleration*(t - gamma)*(t - gamma);
+		}
+		else {
+			return consigne_angle;
 		}
 	}
 	return 0;
@@ -432,17 +481,17 @@ void Motor::push_in_tab(float x, float tableau[]){
 
 void Motor::send_to_ui() {
 	float t = tc->read_us()*0.000001;
-	float omega = consigne_position / VITESSEMAX + VITESSEMAX / ACCELERATION;
-	float alpha = VITESSEMAX / ACCELERATION;
-	float beta = omega - VITESSEMAX / ACCELERATION;
+	float omega = consigne_position / VITESSEMAX_POS + VITESSEMAX_POS / ACCELERATION_POS;
+	float alpha = VITESSEMAX_POS / ACCELERATION_POS;
+	float beta = omega - VITESSEMAX_POS / ACCELERATION_POS;
 	interfaceCom->set_bat18(t);
 	interfaceCom->set_bat9(omega);
-	interfaceCom->set_current_d(alpha);
-	interfaceCom->set_current_g(beta);
-	interfaceCom->set_dist_d(consigne_hyperbolique());
-	interfaceCom->set_dist_g(dist_g);
+	interfaceCom->set_current_d(instEncoder->getX());//instEncoder->getX());
+	interfaceCom->set_current_g(instEncoder->getY());//instEncoder->getY());
+	interfaceCom->set_dist_d(instEncoder->getDd());//consigne_parabolique_pos());
+	interfaceCom->set_dist_g(instEncoder->getDg());//consigne_parabolique_ang());
 	interfaceCom->set_erreur_d(consigne_position - ((dist_d + dist_g) / 2.));
-	interfaceCom->set_erreur_g(dist_d - dist_g);
+	interfaceCom->set_erreur_g(consigne_angle - dist_d + dist_g);
 	interfaceCom->set_pwmd(pwmd);
 	interfaceCom->set_pwmg(pwmg);
 	interfaceCom->set_status_motor(status);
