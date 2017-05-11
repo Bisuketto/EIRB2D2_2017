@@ -15,13 +15,17 @@ Motor::Motor() {
 	motorG->write(0);
 	sens_mD = new DigitalOut(PIN_SENSMD);
 	sens_mG = new DigitalOut(PIN_SENSMG);
+	led = new DigitalOut(LED1);
 	consigne_vitesse = 0;
 	consigne_vd_change(0.);
 	consigne_vd_change(0.);
 	dist_d = 0;
 	dist_g = 0;
 	tc = new Timer;
+	tirette = new Timer;
+	tirette->start();
 	tc->start();
+	pin = new AnalogIn(PIN_GP2);
 }
 
 Motor::Motor(Serial *pc_out) //Ajouter les pins dans les paramètres de constructeur
@@ -63,33 +67,16 @@ void Motor::link_to_enc(Encoders* enc) {
 	instEncoder = enc;
 }
 
+void Motor::link_to_detect(GP2 *gp2) {
+	sensor = gp2;
+}
+
 void Motor::stop(){
 	routineAsserv->detach();
 	motorD->write(0);
 	motorG->write(0);
 	status = false;
 	hasToStop = false;
-}
-
-void Motor::vitesse(float vitesse) {
-	int reading = 0;
-	consigne_vitesse = 0;
-	consigne_vd_change(0.);
-	consigne_vg_change(0.);
-	routineAsserv->attach(callback(this, &Motor::asserv_vitesse), PERIODE_ASSERV);
-	if (modeTest) {
-		pc->printf("Mode Test Vitesse\n");
-	}
-	while (1) {
-		if (modeTest)
-		{
-			if (pc->readable() && !reading)
-			{
-				reading = 1;
-				debug(&reading);
-			}
-		}
-	}
 }
 
 void Motor::vitesse_man(float vg, float vd) {
@@ -113,36 +100,17 @@ void Motor::vitesse_man(float vg, float vd) {
 	status = false;
 }
 
-void Motor::trajectoire(float vitesse) {
-	int reading = 0;
-	consigne_vitesse = 0;
-	consigne_vd_change(0.);
-	consigne_vg_change(0.);
-	routineAsserv->detach();
-	routineAsserv->attach(callback(this, &Motor::asserv_trajectoire), PERIODE_ASSERV);
-	if (modeTest) {
-		pc->printf("Mode Test Trajectoire\n");
-	}
-	while (1) {
-		if (modeTest)
-		{
-			if (pc->readable() && !reading)
-			{
-				reading = 1;
-				debug(&reading);
-			}
-		}
-	}
-}
-
 void Motor::position(float distance, float angle) {
 	int reading = 0;
+	obstacle = false;
+	led->write(0);
 	//calc_vitesse();
 	float distance_inc = distance*RESOLUTION / (PERIMETER);// *0.001);
 	float angle_inc = 2 * angle*RADIUS_ENC*RESOLUTION / (PERIMETER);
 	consigne_a_change(angle_inc);
 	consigne_p_change(distance_inc);
 	tc->reset();
+	last_change_d = tc->read_us();
 	routineAsserv->detach();
 	routineAsserv->attach(callback(this, &Motor::asserv_position), PERIODE_ASSERV);
 	if (modeTest) {
@@ -151,11 +119,22 @@ void Motor::position(float distance, float angle) {
 	status = true;
 }
 
-void Motor::angle(float angle){
-	float envergure = 360; // In mm
-	float distance_roue = (angle * 3.14 / 180)*envergure;
-	float consigne_angle = (distance_roue / PERIMETER) * RESOLUTION;
-	calc_sens(consigne_angle, -consigne_angle); //Angle > 0 Rotate counterclockwise
+void Motor::position_xy(float _x, float _y) {
+	xi = instEncoder->getX();
+	yi = instEncoder->getY();
+	consigne_a_change(0);
+	consigne_p_change(0);
+	consigne_x = _x;
+	consigne_y = _y;
+	tc->reset();
+	//last change pour condition d'arrêt à faire
+	routineAsserv->detach();
+	routineAsserv->attach(callback(this, &Motor::asserv_xy), PERIODE_ASSERV);
+	status = true;
+}
+
+int Motor::stopped_obstacle() {
+	return obstacle;
 }
 
 void Motor::asserv_position() {
@@ -222,6 +201,93 @@ void Motor::asserv_position() {
 		interfaceCom->sendText("Fin du processus d'asserv en position\n");
 		stop();
 	}
+	if (pin->read() > SEUIL_GP2) {
+		interfaceCom->sendText("CACA\n");
+		obstacle = true;
+		led->write(1);
+		stop();
+	}
+	/*if (sensor->isTooClose()) {
+		obstacle = true;
+		led->write(1);
+		stop();
+	}*/
+	if (tirette->read() > 90) {
+		//interfaceCom->sendText("Allahu Akbar\n");
+		//stop();
+	}
+}
+
+void Motor::asserv_xy() {
+	static float coeffXP[TAILLE_TABLEAUX] = { 0.07259, -0.06858, -0.07254, 0.06863 };// { 0.03564, -0.03161, -0.03561, 0.03165 }Ok;
+	static float coeffYP[TAILLE_TABLEAUX] = { -1.334, -0.1061, 0.4404, 0 };// { 0.6591, -0.9903, 0.5688, 0 }Ok;
+	static float coeffXA[TAILLE_TABLEAUX] = { 0.0363, -0.03429, -0.03627, 0.03432 };
+	static float coeffYA[TAILLE_TABLEAUX] = { -1.334, -0.1061, 0.4404, 0 };
+	calc_vitesse();
+
+	float xk;
+	float yk;
+	consigne_parabolique_xy(&xk, &yk);
+	float Dx = xk - instEncoder->getX();
+	float Dy = yk - instEncoder->getY();
+	int A = (Dx > 0) ? -1 : 1;
+	float epsilon_angle = (Dy > 0) ? (A*atan(fabs(Dx) / fabs(Dy)) - instEncoder->getTheta()) : (A*PI - A*atan(fabs(Dx) / fabs(Dy)) - instEncoder->getTheta());
+	float epsilon_dist = sqrt(Dx*Dx + Dy*Dy);
+
+	push_in_tab(epsilon_dist, errors_dist);
+	float vitesse = coeffXP[0] * errors_dist[0] + coeffXP[1] * errors_dist[1] + coeffXP[2] * errors_dist[2] + coeffXP[3] * errors_dist[3]
+		- (coeffYP[0] * consignes_v[0] + coeffYP[1] * consignes_v[1] + coeffYP[2] * consignes_v[2]);
+	push_in_tab(vitesse, consignes_v);
+	push_in_tab(epsilon_angle, errors_angle);
+	float angle = coeffXA[0] * errors_angle[0] + coeffXA[1] * errors_angle[1] + coeffXA[2] * errors_angle[2] + coeffXA[3] * errors_angle[3]
+		- (coeffYA[0] * consignes_a[0] + coeffYA[1] * consignes_a[1] + coeffYA[2] * consignes_a[2]);
+	push_in_tab(angle, consignes_a);
+
+	float cd = vitesse + angle;
+	float cg = vitesse - angle;
+	//Normalisation
+	cd = cd * 18 * 2 / INC_MAX + 0.03;
+	cg = cg * 18 * 2 / INC_MAX + 0.03;
+
+	if (cd < 0) {
+		sens_mD->write(0);
+		cd = -1 * cd;
+	}
+	else {
+		sens_mD->write(1);
+	}
+	if (cg < 0) {
+		sens_mG->write(0);
+		cg = -1 * cg;
+	}
+	else {
+		sens_mG->write(1);
+	}
+
+	//Saturations
+
+	cd = (cd > 1) ? 1 : cd;
+	cd = (cd < 0) ? 0 : cd;
+	cg = (cg > 1) ? 1 : cg;
+	cg = (cg < 0) ? 0 : cg;
+
+
+	pwmd = cd;
+	pwmg = cg;
+
+	motorD->write(cd);
+	motorG->write(cg);
+
+	/*if (tc->read_us() - last_change_d > TIMEOUT_ASSERVPOS) {
+		interfaceCom->sendText("Fin du processus d'asserv en position\n");
+		stop();
+	}
+	if (pin->read() > SEUIL_GP2) {
+		interfaceCom->sendText("Obstacle sur le trajet\n");
+		obstacle = true;
+		led->write(1);
+		stop();
+	}*/
 }
 
 void Motor::asserv_vitesse() {
@@ -247,22 +313,26 @@ void Motor::asserv_vitesse() {
 	push_in_tab(pwmd, pwms_d);
 	push_in_tab(pwmg, pwms_g);
 
-	calc_sens(pwmd, pwmg);
+	if (pwmd < 0) {
+		sens_mD->write(0);
+		pwmd = -1 * pwmd;
+	}
+	else {
+		sens_mD->write(1);
+	}
+	if (pwmg < 0) {
+		sens_mG->write(0);
+		pwmg = -1 * pwmg;
+	}
+	else {
+		sens_mG->write(1);
+	}
+
 	pwmd *= (pwmd > 0) * 2 - 1;
 	pwmg *= (pwmg > 0) * 2 - 1;
 
 	motorD->write(pwmd);
 	motorG->write(pwmg);
-}
-
-void Motor::asserv_trajectoire(){
-	//calc_vitesse();
-	static float coeff = 0.000005; //0.00000244140625;
-	float epsilon = dist_d - dist_g;
-	consigne_vitesse_d = consigne_vitesse - epsilon*coeff;
-	consigne_vitesse_g = consigne_vitesse + epsilon*coeff;
-
-	asserv_vitesse();
 }
 
 float Motor::consigne_parabolique_pos() {
@@ -355,27 +425,50 @@ float Motor::consigne_parabolique_ang() {
 	return 0;
 }
 
-void Motor::calc_sens(float vd, float vg)
-{
-	//Right motor direction
-	if (vd >= 0) {
-		sensD = 1;
-		sens_mD->write(1);
+void Motor::consigne_parabolique_xy(float *_xk, float *_yk) {
+	float t = tc->read_us()*0.000001;
+	float acceleration = ACCELERATION_POS;
+	float vmax = VITESSEMAX_POS;
+	
+	//Calcul du xy théorique
+	float dist_ab = sqrt((consigne_x - xi)*(consigne_x - xi) + (consigne_y - yi)*(consigne_y - yi));
+	float facteur = 0.5;
+		//Calcul du facteur
+	float omega = dist_ab / vmax + vmax / acceleration;
+	float alpha = vmax / acceleration;
+	float beta = omega - vmax / acceleration;
+	float gamma;
+
+	if (alpha < beta) {
+		if (t < alpha) {
+			facteur = (0.5*acceleration*t*t)/dist_ab;
+		}
+		else if (t < beta) {
+			facteur = (0.5*acceleration*alpha*alpha + vmax*(t - alpha))/dist_ab;
+		}
+		else if (t < omega) {
+			facteur = (0.5*acceleration*alpha*alpha + vmax*(beta - alpha) + vmax*(t - beta) - 0.5*acceleration*(t - beta)*(t - beta))/dist_ab;
+		}
+		else {
+			facteur = 1;
+		}
 	}
 	else {
-		sensD = 0;
-		sens_mD->write(0);
+		omega = 2 * sqrt(consigne_position / acceleration);
+		gamma = omega / 2;
+		if (t < gamma) {
+			facteur = (0.5*acceleration*t*t)/dist_ab;
+		}
+		else if (t < omega) {
+			facteur = (0.5*acceleration*gamma*gamma + (acceleration*gamma)*(t - gamma) - 0.5*acceleration*(t - gamma)*(t - gamma))/dist_ab;
+		}
+		else {
+			facteur = 1;
+		}
 	}
 
-	//Left motor direction
-	if (vg >= 0) {
-		sensG = 1;
-		sens_mG->write(1);
-	}
-	else {
-		sensG = 0;
-		sens_mG->write(0);
-	}
+	*_xk = (consigne_x - xi)*facteur/dist_ab;
+	*_yk = (consigne_y - yi)*facteur/dist_ab;	
 }
 
 void Motor::calc_vitesse() {
@@ -390,52 +483,6 @@ void Motor::calc_vitesse() {
 
 	dist_d += imp_d_act;
 	dist_g += imp_g_act;
-}
-
-void Motor::debug(int* reading)
-{
-/*	if (affichage_debug->read_ms() >= 1000) {
-		//pc->printf("PWMD : %f PWMG : %f\n", pwmd, pwmg);
-		//pc->printf("Imp G: %d\nImp D : %d\n", instEncoder->getImpEncG(), instEncoder->getImpEncD());
-		//pc->printf("e G : %f e D : %f\n", consigne_vitesse - vitesse_g, consigne_vitesse - vitesse_d);
-		//pc->printf("corr G : %f corr D : %f\n", (consigne_vitesse - vitesse_g)*KP, (consigne_vitesse - vitesse_d)*KP);
-		//pc->printf("Vitesse G : %f Vitesse D : %f\n", vitesse_g * PERIMETER / RESOLUTION, vitesse_d * PERIMETER / RESOLUTION);
-		//pc->printf("Vitesse G : %f inc/s\nVitesse D : %f inc/s\n\n", vitesse_d, vitesse_g);
-		//pc->printf("Inc G : %d\nInc D : %d\n\n", instEncoder->getImpEncG(), instEncoder->getImpEncD());
-		affichage_debug->reset();
-	}*/
-	static char test[64] = "";
-	static char c;
-	while (pc->readable())
-	{
-		pc->gets(test, 7);
-	}
-	pc->printf("%s\n", test);
-	float result = atof(test);
-	
-	consigne_angle = 0;
-	dist_d = 0;
-	dist_g = 0;
-	/*
-	if (result < 0) {
-		calc_sens(-1, -1);
-		consigne_vitesse = -result;
-		consigne_vd_change(-result);
-		consigne_vg_change(-result);
-	}
-	else {
-		calc_sens(1, 1);
-		consigne_vitesse = result;
-		consigne_vd_change(result);
-		consigne_vg_change(result);
-	}
-	pc->printf("Consigne changée à : %f\n", consigne_vitesse);
-	*/
-	consigne_position = result;
-	pc->printf("Consigne changée à : %f\n", consigne_position);
-	for (int j = 0; j < 64; j++)
-		test[j] = 0;
-	*reading = 0;
 }
 
 void Motor::consigne_vd_change(float consigne) {
@@ -484,17 +531,19 @@ void Motor::send_to_ui() {
 	float omega = consigne_position / VITESSEMAX_POS + VITESSEMAX_POS / ACCELERATION_POS;
 	float alpha = VITESSEMAX_POS / ACCELERATION_POS;
 	float beta = omega - VITESSEMAX_POS / ACCELERATION_POS;
-	interfaceCom->set_bat18(t);
-	interfaceCom->set_bat9(omega);
-	interfaceCom->set_current_d(instEncoder->getX());//instEncoder->getX());
-	interfaceCom->set_current_g(instEncoder->getY());//instEncoder->getY());
+	interfaceCom->set_pos(instEncoder->getX(), instEncoder->getY(), instEncoder->getTheta());
+	interfaceCom->set_tinfo(t, omega);
 	interfaceCom->set_dist_d(instEncoder->getDd());//consigne_parabolique_pos());
 	interfaceCom->set_dist_g(instEncoder->getDg());//consigne_parabolique_ang());
-	interfaceCom->set_erreur_d(consigne_position - ((dist_d + dist_g) / 2.));
-	interfaceCom->set_erreur_g(consigne_angle - dist_d + dist_g);
+	interfaceCom->set_erreur_pos(consigne_position - ((dist_d + dist_g) / 2.));
+	interfaceCom->set_erreur_ang(consigne_angle - dist_d + dist_g);
 	interfaceCom->set_pwmd(pwmd);
 	interfaceCom->set_pwmg(pwmg);
 	interfaceCom->set_status_motor(status);
+	interfaceCom->set_bat18(18);
+	interfaceCom->set_bat9(9);
+	interfaceCom->set_current_d(1);
+	interfaceCom->set_current_g(-1);
 }
 
 bool Motor::get_state() {

@@ -8,6 +8,9 @@
 #include "Encoders.hpp"
 #include "Motor.hpp"
 #include "GP2.hpp"
+#include "PathFinderCom.hpp"
+
+enum side{YELLOW = 0, BLUE = 1};
 
 class Navigator
 {
@@ -15,13 +18,20 @@ class Navigator
 		Navigator();
 		Navigator(float x0, float y0, float theta0 = 0);
 		~Navigator();
-		void navigate(std::vector<vector<float> > *route);
+		void navigate(std::vector<vector<float> > route);
+		void nav_pf(std::vector<float> dest);
+		int orientation(float theta);
+
+		void debug_motor(float x, float y);
 
 	private:
 		int go_to(float x, float y);
+		enum side cote;
 		UIcom *interfaceCom;
 		Encoders *encoders;
 		Motor *motorisation;
 		GP2 *instGP2;
+		DigitalIn *interCote;
+		PathFinderCom *instPF;
 };
 

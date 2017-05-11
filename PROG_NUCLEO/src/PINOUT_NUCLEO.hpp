@@ -1,7 +1,10 @@
 #pragma once
 
-#define PIN_PWMD PB_11 //D6
-#define PIN_PWMG PB_10 //D9
+#define PIN_COMRASP_TX PE_8
+#define PIN_COMRASP_RX PE_7
+
+#define PIN_PWMD PB_11
+#define PIN_PWMG PB_10
 
 #define PIN_SENSMD PF_13 //D7
 #define PIN_SENSMG PF_12 //D8
@@ -11,4 +14,10 @@
 #define PIN_TIM4_CH1 PD_12
 #define PIN_TIM4_CH2 PD_13
 
-#define PIN_GP2 A0
+#define PIN_GP2 PA_3
+
+#define PIN_TIRETTE PG_9
+#define PIN_SWITCHSIDE PG_10
+
+#define PIN_BRAS PE_12
+#define PIN_PINCE PE_10

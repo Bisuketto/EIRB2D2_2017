@@ -1,19 +1,26 @@
 #include "GP2.hpp"
 
 GP2::GP2(double seuil_d){
+	stop = false;
     seuil_distance = seuil_d;
     seuil_volt = voltFromDistance(seuil_distance);
-
-    pin = new AnalogIn(PIN_GP2);
+	pin = new AnalogIn(PIN_GP2);
+	valeur = 0;
 }
 
-bool GP2::detect(){  //Comparaison par tensions
-    return seuil_volt > pin->read();
+void GP2::detect(){  //Comparaison par tensions
+	float posV = pin->read();
+	stop = posV > 0.90;//seuil_volt > posV;
+	return;
 }
 
+int GP2::isTooClose() {
+	detect();
+	return stop;
+}
 
 double GP2::voltFromDistance(double dist){
-    return 25.1 * pow(dist,-0.965);
+	return 25.1 / dist; //* pow(dist,-0.965);
 }
 
 //getter and setter

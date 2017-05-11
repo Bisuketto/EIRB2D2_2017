@@ -1,12 +1,15 @@
 #pragma once
 
-#include "mbed.h"
+#include <mbed.h>
 #include "PINOUT_NUCLEO.hpp"
+#include "Ticker.h"
 
 class GP2{
   public:
     GP2(double);
-    bool detect();
+    void detect();
+	int isTooClose();
+	bool getState();
 
     //getter and setter
     void setSeuil(double);
@@ -18,4 +21,6 @@ class GP2{
     AnalogIn* pin;
     double seuil_distance;
     double seuil_volt;
+	float valeur;
+	int stop;
 };

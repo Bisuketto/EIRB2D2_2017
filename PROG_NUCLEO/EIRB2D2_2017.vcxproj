@@ -65,7 +65,9 @@
     <ClInclude Include="src\GP2.hpp" />
     <ClInclude Include="src\Motor.hpp" />
     <ClInclude Include="src\Navigator.hpp" />
+    <ClInclude Include="src\PathFinderCom.hpp" />
     <ClInclude Include="src\PINOUT_NUCLEO.hpp" />
+    <ClInclude Include="src\Proto.hpp" />
     <ClInclude Include="src\UIcom.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -74,6 +76,8 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Motor.cpp" />
     <ClCompile Include="src\Navigator.cpp" />
+    <ClCompile Include="src\PathFinderCom.cpp" />
+    <ClCompile Include="src\Proto.cpp" />
     <ClCompile Include="src\UIcom.cpp" />
   </ItemGroup>
   <ItemGroup>

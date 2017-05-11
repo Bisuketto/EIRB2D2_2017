@@ -4,8 +4,8 @@ UIcom::UIcom(Motor *instMotor){
 	status = false;
 	status_motor = false;
 	ptomotor = instMotor;
-	erreur_d = 0;
-	erreur_g = 0;
+	erreur_pos = 0;
+	erreur_ang = 0;
 	pwmg = 0;
 	pwmd = 0;
 	dist_g = 0;
@@ -14,7 +14,12 @@ UIcom::UIcom(Motor *instMotor){
 	current_d = 0;
 	bat9 = 0;
 	bat18 = 0;
-	serialCom = new Serial(UI_SERIAL_TX, UI_SERIAL_RX, UI_SERIAL_BAUDRATE);
+	theta = 0;
+	x = 0;
+	y = 0;
+	t = 0;
+	omega = 0;
+	serialCom = new Serial(PG_14, PG_9, 57600);//new Serial(UI_SERIAL_TX, UI_SERIAL_RX, UI_SERIAL_BAUDRATE);
 	scheduleOut = new Ticker;
 	scheduleOut->attach(callback(this, &UIcom::send_Infos), PERIODE_UI_OUT);
 	serialCom->attach(callback(this, &UIcom::get_instr));
@@ -117,15 +122,15 @@ void UIcom::sendText(char *str) {
 }
 
 void UIcom::send_Infos() {
-	serialCom->printf("infos~%f~%f~%f~%f~%f~%f~%f~%f~%f~%f~%d\n", erreur_d, erreur_g, pwmd, pwmg, dist_d, dist_g, current_d, current_g, bat9, bat18, status_motor);
+	serialCom->printf("infos~%5.1f~%5.1f~%1.4f~%1.4f~%5.1f~%5.1f~%2.3f~%2.3f~%2.2f~%2.2f~%5.2f~%5.2f~%5.2f~%5.2f~%5.2f~%d\n", erreur_pos, erreur_ang, pwmd, pwmg, dist_d, dist_g, current_d, current_g, bat9, bat18, x, y, theta, t, omega, status_motor);
 }
 
-void UIcom::set_erreur_d(float value) {
-	erreur_d = value;
+void UIcom::set_erreur_pos(float value) {
+	erreur_pos = value;
 }
 
-void UIcom::set_erreur_g(float value) {
-	erreur_g = value;
+void UIcom::set_erreur_ang(float value) {
+	erreur_ang = value;
 }
 
 void UIcom::set_pwmd(float value) {
@@ -162,6 +167,17 @@ void UIcom::set_bat18(float value) {
 
 void UIcom::set_status_motor(bool value) {
 	status_motor = value;
+}
+
+void UIcom::set_pos(float xi, float yi, float thetai) {
+	x = xi;
+	y = yi;
+	theta = thetai;
+}
+
+void UIcom::set_tinfo(float ti, float omegai) {
+	t = ti;
+	omega = omegai;
 }
 
 UIcom::~UIcom()
