@@ -19,6 +19,10 @@ class Navigator
 		Navigator(float x0, float y0, float theta0 = 0);
 		~Navigator();
 		void navigate(std::vector<vector<float> > route);
+		void chemin1();
+		void retour1();
+		void chemin2();
+		void retour2();
 		void nav_pf(std::vector<float> dest);
 		int orientation(float theta);
 

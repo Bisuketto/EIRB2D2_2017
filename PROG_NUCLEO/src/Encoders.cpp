@@ -114,6 +114,7 @@ void Encoders::TIM3_EncoderInit() {
 
 	TIM3->SMCR = 3;          // Encoder mode 3
 	TIM3->CCER = 0;          // rising edge polarity
+	TIM3->CCER |= (1 << 1);
 	TIM3->ARR = 0xFFFF;      // count from 0-ARR or ARR-0
 	TIM3->CCMR1 = 0xC1C1;    // f_DTS/16, N=8, IC1->TI1, IC2->TI2
 	TIM3->EGR = 1;           // Generate an update event

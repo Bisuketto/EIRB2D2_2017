@@ -7,17 +7,33 @@
 #include "GP2.hpp"
 
 int main() {
-	/*
-	DigitalOut v(LED1);
-	GP2 test(30);
-	Serial loul(USBTX, USBRX, 115200);
+	
+	/*DigitalOut v(LED1);
+	AnalogIn inputTest1(PA_3);
+	AnalogIn inputTest2(PC_0);
+	AnalogIn inputTest3(PC_3);
+	AnalogIn inputTest4(PF_3);
+	AnalogIn inputTest5(PF_5);
+	AnalogIn inputTest6(PF_10);
+	DigitalIn t(PIN_TIRETTE);
+	DigitalIn cote(PIN_SWITCHSIDE);
+	Serial loul(USBTX, USBRX, 57600);
 	loul.printf("Toopjeej\n");
 	while (1) {
-		int lul = test.isTooClose();
-		v.write(lul);
-		//loul.printf("%f\n", test.getget());
-		//wait(1);
+		//int lul = test.isTooClose();
+		//v.write(lul);
+		loul.printf("1 : %f\n", inputTest1.read());
+		loul.printf("2 : %f\n", inputTest2.read());
+		loul.printf("3 : %f\n", inputTest3.read());
+		loul.printf("4 : %f\n", inputTest4.read());
+		loul.printf("5 : %f\n", inputTest5.read());
+		loul.printf("6 : %f\n", inputTest6.read());
+		//loul.printf("Tirette %s\n", (t.read() == 1) ? "mise" : "retirée");
+		//loul.printf("Switch %s\n", (cote.read() == 0) ? "Jaune" : "Bleu");
+		wait(0.500);
 	}*/
+
+	DigitalIn tirette(PIN_TIRETTE);
 	DigitalIn a(PG_9);
 	DigitalIn btn(USER_BUTTON);
 	//while (a.read() == 1); //Tirette
@@ -27,51 +43,92 @@ int main() {
 	red.write(1);
 
 	Proto *instProto = new Proto();
-	while (btn.read() == 0);
-	
-	Navigator nav1(175, 175, -PI/2.);
+	/*instProto->down_arm();
+	while (1) {		
+		instProto->down_arm();
+		instProto->testProt();
+		instProto->up_arm();
+		wait(2);
+	}*/
+
+	while (tirette.read() == 1);
+
+
+	Navigator nav1(1070 - 180, 180, -PI / 2);//nav1(900, 175, -PI / 2.); //nav1(175, 175, -PI/2.);
 
 	//nav1.debug_motor(800, 175);
-
-	//while (btn.read() == 0);
+	while (tirette.read() == 1);
 
 	std::vector<vector<float> > portion1;
 	std::vector<float> p0_test(2, 0);
 	p0_test[0] = 175;
 	p0_test[1] = 175;
 	std::vector<float> p1_test(2, 0);
-	p1_test[0] = 880;
+	p1_test[0] = 900; //880
 	p1_test[1] = 175;
 	std::vector<float> p2_test(2, 0);
-	p2_test[0] = 1260;
+	p2_test[0] = 1350;//1260
 	p2_test[1] = 600;
-	portion1.push_back(p1_test);
+	//portion1.push_back(p1_test);
 	portion1.push_back(p2_test);
 	nav1.navigate(portion1);
-	nav1.orientation(PI / 2);
-	instProto->pick_and_keep();
+	//nav1.orientation(PI / 2);
+	//instProto->down_arm();
+	
+
+	std::vector<vector<float> > portiona;
+	std::vector<float> pa1_test(2, 0);
+	pa1_test[0] = 1000;// 1200;//1260
+	pa1_test[1] = 1100;// 600;
+	portiona.push_back(pa1_test);
+	nav1.navigate(portiona);
+	nav1.orientation(-PI);
+	//instProto->fermeture_pince();
+	//instProto->down_arm();
+
 	std::vector<vector<float> > retour1;
 	std::vector<float> r11(2, 0);
-	r11[0] = 1350;
-	r11[1] = 250;
-	
+	r11[0] = 1000;// 1350;
+	r11[1] = 250;// 250;
 	retour1.push_back(r11);
 	nav1.navigate(retour1);
-	nav1.orientation(PI / 2);
-	instProto->drop_pince();
+	//nav1.orientation(PI / 2);
+	//instProto->ouverture_pince();
+	//instProto->leve_bras();
+	//instProto->drop_pince();
 
-	std::vector<vector<float> > portion2;
+
+	/*std::vector<vector<float> > portion2;
 	std::vector<float> p21(2, 0);	
 	p21[0] = 1250;
 	p21[1] = 600;
 	std::vector<float> p22(2, 0);
-	p22[0] = 770;
+	p22[0] = 850;//770
 	p22[1] = 1075;
 	portion2.push_back(p21);
 	portion2.push_back(p22);
 	nav1.navigate(portion2);
-	nav1.orientation(PI / 2);
-	instProto->pick_and_keep();
+	nav1.orientation(PI / 2);*/
+
+	
+	std::vector<vector<float> > portionb;
+	std::vector<float> pb1(2, 0);
+	pb1[0] = 1150;
+	pb1[1] = 340;
+	portionb.push_back(pb1);
+	nav1.navigate(portionb);
+	nav1.orientation(-PI / 2);
+	instProto->down_arm();
+	nav1.orientation((-PI) - (PI / 4));
+	instProto->up_arm(); 
+	nav1.orientation(-PI / 2);
+	instProto->down_arm();
+	nav1.orientation((-PI) - (PI / 4));
+	instProto->up_arm();
+	nav1.orientation(-PI / 2);
+	instProto->down_arm();
+	nav1.orientation((-PI) - (PI / 4));
+	instProto->up_arm();
 
 	std::vector<vector<float> > retour2;
 	std::vector<float> r21(2, 0);
@@ -84,6 +141,9 @@ int main() {
 	retour2.push_back(r22);
 	nav1.navigate(retour2);
 	nav1.orientation(PI / 2 + PI/6);
+
+	while (btn.read() == 0); //Arrêt démo
+
 	instProto->drop_pince();
 
 	std::vector<vector<float> > portion3;
@@ -94,19 +154,27 @@ int main() {
 	p32[0] = 700;
 	p32[1] = 1075;
 	std::vector<float> p33(2, 0);
-	p33[0] = 415;
-	p33[1] = 820;
+	p33[0] = 400;//415
+	p33[1] = 780;//820
 	portion3.push_back(p31);
 	portion3.push_back(p32);
 	portion3.push_back(p33);
 	nav1.navigate(portion3);
 	nav1.orientation(3 * PI / 4);
-	instProto->pick_and_keep();
+	instProto->down_arm();
+	
+	std::vector<vector<float> > portionc;
+	std::vector<float> pc1(2, 0);
+	pc1[0] = 300;
+	pc1[1] = 750;
+	portionb.push_back(pc1);
+	nav1.navigate(portionc);
+	instProto->up_arm();
 
 	std::vector<vector<float> > retour3;
 	std::vector<float> r31(2, 0);
-	r31[0] = 350;
-	r31[1] = 700;
+	r31[0] = 380; //350
+	r31[1] = 540; //700
 	retour3.push_back(r31);
 	nav1.navigate(retour3);
 	nav1.orientation(PI);

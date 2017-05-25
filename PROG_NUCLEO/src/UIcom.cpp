@@ -19,7 +19,7 @@ UIcom::UIcom(Motor *instMotor){
 	y = 0;
 	t = 0;
 	omega = 0;
-	serialCom = new Serial(PG_14, PG_9, 57600);//new Serial(UI_SERIAL_TX, UI_SERIAL_RX, UI_SERIAL_BAUDRATE);
+	serialCom = new Serial(PD_5, PD_6, 57600); //new Serial(PG_14, PG_9, 57600);//new Serial(UI_SERIAL_TX, UI_SERIAL_RX, UI_SERIAL_BAUDRATE);
 	scheduleOut = new Ticker;
 	scheduleOut->attach(callback(this, &UIcom::send_Infos), PERIODE_UI_OUT);
 	serialCom->attach(callback(this, &UIcom::get_instr));

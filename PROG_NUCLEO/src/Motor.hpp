@@ -8,6 +8,7 @@
 #include "GP2.hpp"
 #include <string>
 #include <stdlib.h>
+#include <math.h>
 
 class UIcom;
 class GP2;
@@ -42,6 +43,7 @@ class Motor
 		float consigne_parabolique_pos();
 		float consigne_parabolique_ang();
 		void consigne_parabolique_xy(float *_epsilon_angle, float *_epsilon_distance);
+		bool sensor_status(); //Return true if there is an obstacle
 		UIcom *interfaceCom;
 		Encoders *instEncoder;
 		Ticker *routineAsserv;
@@ -55,6 +57,7 @@ class Motor
 		bool hasToStop; //Stop if True
 		bool modeTest;
 		bool obstacle;
+		bool rotate_only;
 		PwmOut *motorD;
 		PwmOut *motorG;
 		DigitalIn * bouton;
@@ -85,7 +88,10 @@ class Motor
 		int dist_d;
 		int dist_g;
 		float last_change_d;
-		AnalogIn *pin;
+		AnalogIn *gp2_front_r;
+		AnalogIn *gp2_front_l;
+		AnalogIn *gp2_right;
+		AnalogIn *gp2_left;
 
 		float xi;
 		float yi;

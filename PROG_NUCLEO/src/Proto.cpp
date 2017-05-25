@@ -4,10 +4,18 @@ Proto::Proto()
 {
 	bras = new PwmOut(PIN_BRAS);
 	pince = new PwmOut(PIN_PINCE);
-	leve_bras();
-	wait(1);
-	fermeture_pince();
-	wait(1);
+	reserve = new PwmOut(PIN_RESERVE);
+
+	gp2fr = new AnalogIn(GP2_FRONTR);
+	gp2fl = new AnalogIn(GP2_FRONTL);
+
+	bras->period_ms(20);
+	reserve->period_ms(20);
+	pince->period_ms(30);
+
+	reserve->pulsewidth_us(600);
+	pince->pulsewidth_us(2300);
+	bras->pulsewidth_us(900);
 }
 
 
@@ -16,31 +24,45 @@ Proto::~Proto()
 }
 
 void Proto::fermeture_pince() {
-	for (int p = 2400; p > 1400; p -= 50) { //1500
-		pince->pulsewidth_us(p);
-		wait(0.01);
-	}
+	pince->pulsewidth_us(3000);
 }
 
 void Proto::ouverture_pince() {
-	for (int p = 1500; p < 2400; p += 50) {
-		pince->pulsewidth_us(p);
-		wait(0.01);
-	}
+	pince->pulsewidth_us(1400);
 }
 
 void Proto::descente_bras() {
-	for (int p = 1500; p < 2150; p += 50) {
-		bras->pulsewidth_us(p);
-		wait(0.01);
-	}
+	while (obstructed())
+		wait(0.2);
+	bras->pulsewidth_us(1800);
+	wait(1);
+	bras->write(0);
 }
 
 void Proto::leve_bras() {
-	for (int p = 2400; p > 1200; p -= 50) { //1100
-		bras->pulsewidth_us(p);
-		wait(0.01);
-	}
+	bras->pulsewidth_us(900);
+}
+
+void Proto::free_cylindre() {
+	reserve->pulsewidth_us(400);
+	//wait(1);
+	//reserve->pulsewidth_us(600);
+	//wait(1);
+}
+
+void Proto::testProt() {
+	fermeture_pince();
+	wait(2.5);
+	ouverture_pince();
+	wait(2.5);
+	fermeture_pince();
+	wait(2.5);
+	//descente_bras();
+	//wait(1.);
+	//leve_bras();
+	//wait(1.);
+	//free_cylindre();
+	//wait(1.);
 }
 
 void Proto::recup() {
@@ -49,7 +71,7 @@ void Proto::recup() {
 	descente_bras();
 	wait(1);
 	fermeture_pince();
-	wait(1);
+	wait(2);
 	leve_bras();
 	wait(1);
 	ouverture_pince();
@@ -62,7 +84,7 @@ void Proto::pick_and_keep() {
 	descente_bras();
 	wait(1);
 	fermeture_pince();
-	wait(1);
+	wait(2);
 	leve_bras();
 	wait(1);
 }
@@ -76,4 +98,29 @@ void Proto::drop_pince() {
 	wait(1);
 	fermeture_pince();
 	wait(1);
+}
+
+void Proto::down_arm() {	
+	descente_bras();
+	wait(1);
+	ouverture_pince();
+	wait(1);
+}
+
+void Proto::up_arm() {
+	fermeture_pince();
+	wait(2);
+	leve_bras();
+	wait(1);
+}
+
+bool Proto::obstructed() {
+	bool out = false;
+	if (gp2fr->read() > SEUIL_GP2) {
+		out = true;
+	}
+	if (gp2fl->read() > SEUIL_GP2) {
+		out = true;
+	}
+	return out;
 }

@@ -25,7 +25,10 @@ Motor::Motor() {
 	tirette = new Timer;
 	tirette->start();
 	tc->start();
-	pin = new AnalogIn(PIN_GP2);
+	gp2_front_r = new AnalogIn(GP2_FRONTR);
+	gp2_front_l = new AnalogIn(GP2_FRONTL);
+	gp2_right = new AnalogIn(GP2_R);
+	gp2_left = new AnalogIn(GP2_L);
 }
 
 Motor::Motor(Serial *pc_out) //Ajouter les pins dans les paramètres de constructeur
@@ -101,6 +104,9 @@ void Motor::vitesse_man(float vg, float vd) {
 }
 
 void Motor::position(float distance, float angle) {
+	rotate_only = (distance == 0) ? true : false;
+	if (rotate_only == true)
+		interfaceCom->sendText("Rotate Only\n");
 	int reading = 0;
 	obstacle = false;
 	led->write(0);
@@ -201,21 +207,41 @@ void Motor::asserv_position() {
 		interfaceCom->sendText("Fin du processus d'asserv en position\n");
 		stop();
 	}
-	if (pin->read() > SEUIL_GP2) {
-		interfaceCom->sendText("CACA\n");
+	if ((fabs(consigne_position - dist_from_start) < 100) && (fabs(consigne_angle - (dist_d - dist_g)) < 100)) {
+		interfaceCom->sendText("Position atteinte\n");
+		stop();
+	}	
+	if ((rotate_only == false) && (sensor_status() == true)) {
 		obstacle = true;
-		led->write(1);
+		interfaceCom->sendText("Obstacle detecte\n");
 		stop();
 	}
-	/*if (sensor->isTooClose()) {
-		obstacle = true;
-		led->write(1);
-		stop();
-	}*/
+
 	if (tirette->read() > 90) {
-		//interfaceCom->sendText("Allahu Akbar\n");
-		//stop();
+		interfaceCom->sendText("Delai de jeu dépassé\n");
+		stop();
 	}
+}
+
+bool Motor::sensor_status() {
+	bool out = false;
+	if (gp2_front_l->read() > SEUIL_GP2) {
+		interfaceCom->sendText("AVANT GAUCHE OBSTRUE\n");
+		out = true;
+	}
+	if (gp2_front_r->read() > SEUIL_GP2) {
+		interfaceCom->sendText("AVANT DROIT OBSTRUE\n");
+		out = true;
+	}
+	if (gp2_right->read() > SEUIL_GP2+0.05) {
+		interfaceCom->sendText("DROIT OBSTRUE\n");
+		out = true;
+	}
+	if (gp2_left->read() > SEUIL_GP2+0.05) {
+		interfaceCom->sendText("GAUCHE OBSTRUE\n");
+		out = true;
+	}
+	return out;
 }
 
 void Motor::asserv_xy() {
